@@ -9,8 +9,8 @@ outputFile = sys.argv[2]
 wordDict = defaultdict(int)
 
 # attempt to open input file
-with open(inputFile, 'r') as context:
-    for line in context:
+with open(inputFile, 'r') as file:
+    for line in file:
         # get rid of newline characters
         line = line.strip()
         # split line on whitespace and punctuation
@@ -20,12 +20,10 @@ with open(inputFile, 'r') as context:
                 continue
             word = word.lower()
             wordDict[word] = wordDict[word] + 1
-    context.close()
 
 wordDict = OrderedDict(sorted(wordDict.items()))
 
 with open(outputFile, 'w+') as output:
     for word in wordDict:
         output.write(word + ' ' + str(wordDict[word]) + '\n')
-    output.close()
 
