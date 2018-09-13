@@ -8,8 +8,6 @@ if len(display_path) > 2:
 else:
     display_path = 'student:> '
 
-pid = os.getpid()
-
 def shell_logic(shell):
     if shell < 0:
         os.write(2, ("fork failed, returning %d\n"% rc).encode())
@@ -19,22 +17,29 @@ def shell_logic(shell):
         os.write(1, display_path.encode())
         command = input().split()
         args = []
+        if command[0] == 'exit':
+            sys.exit(1)
         for idx in range(0, len(command)):
             if command[idx] == '<':
                 idx = idx + 1
+                os.close(0)
+                sys.stdin = open(command[idx])
+                fd = sys.stdin.fileno()
+                os.set_inheritable(fd, True)
+                #os.write(2, ("Child: opened fd=%d for input\n" %fd).encode())
+                continue
             if command[idx] == '>':
                 idx = idx + 1
                 os.close(1)
                 sys.stdout = open(command[idx], "w")
                 fd = sys.stdout.fileno()
                 os.set_inheritable(fd, True)
-                os.write(2, ("Child: opened fd=%d for writing\n" %fd).encode())
+                #os.write(2, ("Child: opened fd=%d for writing\n" %fd).encode())
                 break
             args.append(command[idx])
     
         for dir in os.environ['PATH'].split(':'):
             program = "%s/%s" % (dir, args[0])
-            #os.write(1, ("Child: ...trying to exec %s\n" % program).encode())
             try:
                 os.execve(program, args, os.environ)
             except FileNotFoundError:
@@ -49,7 +54,5 @@ def main():
         shell_logic(os.fork())
         childPidCode = os.wait()
         exitCode = childPidCode[1]
-        #os.write(1, "Shell {} terminated with exit code {}\n First Parent id: {}\n".format(
-        #    childPidCode[0], childPidCode[1], pid).encode())
 
 main()
