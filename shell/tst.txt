@@ -1,4 +1,0 @@
-output.txt
-p4-output.txt
-pseudoshell.py
-tst.txt
