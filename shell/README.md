@@ -46,4 +46,16 @@ shell:
 
    1. `ls > output.txt` - this writes the output of ls to output.txt
 
-   2. `cat < output.txt` - this uses output.txt as the input for ca
+   2. `cat < output.txt` - this uses output.txt as the input for cat and
+   writes to the shell
+
+   3. `cat < p4-output.txt > output.txt` - this uses p4-output.txt as the
+   input for cat and writes the output to output.txt.
+
+   4. `cat < p4-output.txt > output.txt | wc` - this does the same as above,
+   but takes in an empty shell line as the input to wc and prints to shell
+
+   5. `/bin/ls | /bin/wc` this uses the output of ls as the input of wc.
+
+   6. `cat < p4-output.txt | wc | wc | wc` - this showcases how you can pipe
+   the input continuously of the output of each pipe
