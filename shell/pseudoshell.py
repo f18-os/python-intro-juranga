@@ -2,7 +2,6 @@
 
 import os, sys, time, re
 import getpass
-import fileinput
 
 user = getpass.getuser() + ':~'
 display_path = os.getcwd().split("/")
