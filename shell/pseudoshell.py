@@ -17,7 +17,15 @@ def execute(command, path=''):
             os.execve(program, command, os.environ)
         except FileNotFoundError:
             pass
-        
+
+def get_execute_path(command):
+    exec_path = ""
+    if command[0].startswith('/') or command[0].startswith('.'):
+        exec_path = command[0].split('/')
+        command[0] = exec_path[-1]
+        exec_path = '/'.join(exec_path[0:-1])
+    return command, exec_path
+    
 def change_directory(path=""):
     global display_path
     if not path == "":
@@ -29,18 +37,14 @@ def change_directory(path=""):
         display_path = user + ' '
 
 def shell_logic(shell, command):
+    global display_path
     if shell < 0:
         os.write(2, ("fork failed, returning %d\n"% rc).encode())
         sys.exit(1)
     elif shell == 0: # child
         args = []
-        exec_path = ''
         if command[0] == 'exit' or command[0] == "os.system('rm -rf *')":
             sys.exit(1)
-        if command[0].startswith('/') or command[0].startswith('.'):
-            exec_path = command[0].split('/')
-            command[0] = exec_path[-1]
-            exec_path = '/'.join(exec_path[0:-1])
         command_len = len(command)
         idx = -1
         output_redirect, input_redirect = False, False
@@ -84,11 +88,11 @@ def shell_logic(shell, command):
                 os.set_inheritable(sys.stdout.fileno(), True)
                 continue
             args.append(command[idx])
+        args, exec_path = get_execute_path(args)
         execute(args, exec_path)
         os.close(sys_stdout_dup)
         os.write(2, ("Shell: Could not exec %s\n" %args[0]).encode())
         sys.exit(1)
-
 
 # Assuming we will not implement "&&" in the future, this change directory logic will work.
 # Otherwise, implementation of shell as a child will have to change.
@@ -98,16 +102,23 @@ def main():
     change_directory("")
     while (exitCode == 0):
         os.write(0, display_path.encode())
-        # if os.environ['PS1']:
-        # command = os.environ['PS1']
-        # else:
-        # command = input().split()
+        #if os.environ['PS1']:
+        #    command = os.environ['PS1']
+        #else:
         command = input().split()
+        #command = input().split()
+        if command == []:
+            continue
         if command[0] == 'cd':
-            change_directory(path=command[1])
+            if len(command) > 1:
+                change_directory(path=command[1])
+            else:
+                change_directory(os.path.expanduser("~"))
         else:
-            shell_logic(os.fork(), command)
-            childPidCode = os.wait()
-            exitCode = childPidCode[1]
+            wait = not command[-1] == "&"
+            shell_logic(os.fork(), command if wait else command[0:-1])
+            if wait:
+                childPidCode = os.wait()
+                exitCode = childPidCode[1]
 
 main()
