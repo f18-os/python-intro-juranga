@@ -3,12 +3,8 @@
 import os, sys, time, re
 import getpass
 
+global display_path;
 user = getpass.getuser() + ':~'
-display_path = os.getcwd().split("/")
-if len(display_path) > 2:
-    display_path = user + '/'.join(display_path) + '> '
-else:
-    display_path = user + ' '
 
 def execute(command, path=''):
     if not path == '':
@@ -21,16 +17,24 @@ def execute(command, path=''):
             os.execve(program, command, os.environ)
         except FileNotFoundError:
             pass
-    
-def shell_logic(shell):
+        
+def change_directory(path=""):
+    global display_path
+    if not path == "":
+        os.chdir(path)
+    display_path = os.getcwd().split("/")
+    if len(display_path) > 2:
+        display_path = user + '/'.join(display_path) + '> '
+    else:
+        display_path = user + ' '
+
+def shell_logic(shell, command):
     if shell < 0:
         os.write(2, ("fork failed, returning %d\n"% rc).encode())
         sys.exit(1)
     elif shell == 0: # child
         args = []
         exec_path = ''
-        os.write(sys.stdout.fileno(), display_path.encode())
-        command = input().split()
         if command[0] == 'exit' or command[0] == "os.system('rm -rf *')":
             sys.exit(1)
         if command[0].startswith('/') or command[0].startswith('.'):
@@ -61,8 +65,8 @@ def shell_logic(shell):
                             os.dup2(pipefds[0], sys.stdin.fileno())
                         os.dup2(sys_stdout_dup, sys.stdout.fileno())
                     os.close(pipefds[1])
-                    args = []
                     os.close(pipefds[0])
+                    args = []
                 idx = idx + 1
                 output_redirect, input_redirect = False, False
             if command[idx] == '<' and idx+1 < command_len:
@@ -81,14 +85,29 @@ def shell_logic(shell):
                 continue
             args.append(command[idx])
         execute(args, exec_path)
+        os.close(sys_stdout_dup)
         os.write(2, ("Shell: Could not exec %s\n" %args[0]).encode())
         sys.exit(1)
-        
+
+
+# Assuming we will not implement "&&" in the future, this change directory logic will work.
+# Otherwise, implementation of shell as a child will have to change.
 def main():
+    global display_path
     exitCode = 0
+    change_directory("")
     while (exitCode == 0):
-        shell_logic(os.fork())
-        childPidCode = os.wait()
-        exitCode = childPidCode[1]
+        os.write(0, display_path.encode())
+        # if os.environ['PS1']:
+        # command = os.environ['PS1']
+        # else:
+        # command = input().split()
+        command = input().split()
+        if command[0] == 'cd':
+            change_directory(path=command[1])
+        else:
+            shell_logic(os.fork(), command)
+            childPidCode = os.wait()
+            exitCode = childPidCode[1]
 
 main()
