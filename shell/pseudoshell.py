@@ -89,8 +89,8 @@ def shell_logic(shell, command):
                 continue
             args.append(command[idx])
         args, exec_path = get_execute_path(args)
-        execute(args, exec_path)
         os.close(sys_stdout_dup)
+        execute(args, exec_path)
         os.write(2, ("Shell: Could not exec %s\n" %args[0]).encode())
         sys.exit(1)
 
@@ -99,16 +99,14 @@ def shell_logic(shell, command):
 def main():
     global display_path
     exitCode = 0
-    change_directory("")
-    while (exitCode == 0):
-        os.write(0, display_path.encode())
-        #if os.environ['PS1']:
-        #    command = os.environ['PS1']
-        #else:
-        command = input().split()
-        #command = input().split()
-        if command == []:
+    #change_directory("")
+    while (exitCode == 0): 
+        #os.write(sys.stdout.fileno(), display_path.encode())
+        command = input(os.environ['PS1']) if os.environ['PS1'] else input()
+        if command == [] or command == "":
             continue
+        else:
+            command = command.split()
         if command[0] == 'cd':
             if len(command) > 1:
                 change_directory(path=command[1])
@@ -120,5 +118,4 @@ def main():
             if wait:
                 childPidCode = os.wait()
                 exitCode = childPidCode[1]
-
 main()
